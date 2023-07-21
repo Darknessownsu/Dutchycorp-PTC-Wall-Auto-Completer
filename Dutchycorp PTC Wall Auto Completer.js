@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Dutchycorp PTC Wall Auto Completer
-// @version      3.0
+// @version      4.0
 // @description  Auto completes PTC wall tasks on DutchyCorp AutoFaucet website
 // @author       Darknessownsu
 // @match        https://autofaucet.dutchycorp.space/ptc/wall.php
@@ -51,8 +51,11 @@
 
         // Initialize progress bar
         const progressBar = document.createElement('div');
+        progressBar.style.position = 'fixed';
+        progressBar.style.top = '0';
+        progressBar.style.left = '0';
         progressBar.style.width = '0%';
-        progressBar.style.height = '10px';
+        progressBar.style.height = '5px';
         progressBar.style.backgroundColor = 'blue';
         document.body.appendChild(progressBar);
 
@@ -103,8 +106,8 @@
             const progressPercentage = (completedTasks / totalTasks) * 100;
             progressBar.style.width = `${progressPercentage}%`;
 
-            // Add a short delay before proceeding to the next task (optional)
-            // await sleep(1000);
+            // Add a short delay before proceeding to the next task (1 second delay)
+            await sleep(1000);
         }
 
         // Display completion notification using the floating toast
