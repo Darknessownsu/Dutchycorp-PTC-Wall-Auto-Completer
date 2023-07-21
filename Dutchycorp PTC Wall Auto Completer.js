@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Dutchycorp PTC Wall Auto Completer
-// @version      4.0
+// @version      5.1
 // @description  Auto completes PTC wall tasks on DutchyCorp AutoFaucet website
 // @author       Darknessownsu
 // @match        https://autofaucet.dutchycorp.space/ptc/wall.php
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/Darknessownsu/expert-broccoli/main/Dutchycorp%20PTC%20Wall%20Auto%20Completer.js
 // ==/UserScript==
 
 (function () {
@@ -23,6 +24,25 @@
             view: window
         });
         element.dispatchEvent(event);
+    }
+
+    // Function to show a fixed progress bar at the top of the page
+    function createProgressBar() {
+        const progressBar = document.createElement('div');
+        progressBar.style.position = 'fixed';
+        progressBar.style.top = '0';
+        progressBar.style.left = '0';
+        progressBar.style.width = '0%';
+        progressBar.style.height = '5px';
+        progressBar.style.backgroundColor = 'blue';
+        document.body.appendChild(progressBar);
+        return progressBar;
+    }
+
+    // Function to update the progress bar
+    function updateProgressBar(progressBar, completedTasks, totalTasks) {
+        const progressPercentage = (completedTasks / totalTasks) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
     }
 
     // Function to show a floating toast notification
@@ -49,15 +69,8 @@
         const totalTasks = buttons.length;
         let completedTasks = 0;
 
-        // Initialize progress bar
-        const progressBar = document.createElement('div');
-        progressBar.style.position = 'fixed';
-        progressBar.style.top = '0';
-        progressBar.style.left = '0';
-        progressBar.style.width = '0%';
-        progressBar.style.height = '5px';
-        progressBar.style.backgroundColor = 'blue';
-        document.body.appendChild(progressBar);
+        // Create the fixed progress bar at the top of the page
+        const progressBar = createProgressBar();
 
         for (let i = 0; i < buttons.length; i++) {
             const button = buttons[i];
@@ -102,12 +115,11 @@
             window.history.back();
             completedTasks++;
 
-            // Update progress bar
-            const progressPercentage = (completedTasks / totalTasks) * 100;
-            progressBar.style.width = `${progressPercentage}%`;
+            // Update the progress bar
+            updateProgressBar(progressBar, completedTasks, totalTasks);
 
-            // Add a short delay before proceeding to the next task (1 second delay)
-            await sleep(1000);
+            // Add a short delay before proceeding to the next task (2 seconds delay)
+            await sleep(2000);
         }
 
         // Display completion notification using the floating toast
@@ -116,7 +128,7 @@
         console.log(completionMessage);
     }
 
-    // Call the main function to start auto completing tasks
+        // Call the main function to start auto completing tasks
     completePTCWallTasks();
 
     // Add a button to manually trigger the script
@@ -126,3 +138,4 @@
     document.body.appendChild(manualButton);
 
 })();
+ 
