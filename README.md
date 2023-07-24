@@ -1,4 +1,4 @@
-# expert-broccoli
+# Dutchycorp PTC Wall Auto Completer
 Dutchycorp PTC Wall Auto Completer
 
 The "Dutchycorp PTC Wall Auto Completer" is a userscript designed to automate the completion of PTC (Paid To Click) wall tasks on the DutchyCorp AutoFaucet website. When executed, the script navigates through the PTC wall tasks, interacting with the required elements, and automatically completes the tasks to save time and effort for the user.
