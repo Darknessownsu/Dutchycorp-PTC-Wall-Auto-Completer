@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Dutchycorp PTC Wall Auto Completer
-// @version      4.1.1
-// @description  Auto completes PTC wall tasks on DutchyCorp AutoFaucet website
+// @name         Dutchycorp PTC Stealth AutoCompleter
+// @version      5.9
+// @description  Auto-completes PTC wall tasks silently, with stealth behaviors.
 // @author       Darknessownsu
 // @match        https://autofaucet.dutchycorp.space/ptc/wall.php
 // @grant        none
@@ -10,102 +10,112 @@
 (function () {
     'use strict';
 
-    const progressBarHeight = '5px';
-    const progressBarColor = 'blue';
-    const completionMessageDisplayDuration = 3000; // 3 seconds
+    // Anti-bot fingerprint cloaking
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
 
-    async function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function simulateClick(element) {
-        const event = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
+    // Toast display
+    const toast = msg => {
+        const el = document.createElement('div');
+        el.textContent = msg;
+        Object.assign(el.style, {
+            position: 'fixed', bottom: '20px', left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.85)', color: '#fff',
+            padding: '10px 18px', borderRadius: '6px',
+            fontSize: '13px', zIndex: '9999'
         });
-        element.dispatchEvent(event);
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+    };
+
+    function jitterSleep(ms) {
+        const jitter = Math.floor(Math.random() * 900 + 300);
+        return new Promise(res => setTimeout(res, ms + jitter));
     }
 
-    function showToast(message) {
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.left = '50%';
-        toast.style.transform = 'translateX(-50%)';
-        toast.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        toast.style.color = '#fff';
-        toast.style.padding = '10px 20px';
-        toast.style.borderRadius = '5px';
-        toast.innerText = message;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.remove();
-        }, completionMessageDisplayDuration);
+    function simulateClick(el) {
+        if (!el) return;
+        if (Math.random() < 0.06) {
+            const all = [...document.querySelectorAll('button')];
+            const randomBtn = all[Math.floor(Math.random() * all.length)];
+            if (randomBtn && randomBtn !== el) {
+                randomBtn.click();
+                console.log('[Misclick simulation triggered]');
+                return;
+            }
+        }
+        el.click();
     }
 
-    async function completePTCWallTasks() {
-        try {
-            const buttons = document.querySelectorAll('button:contains("fa-eye"):not(.previously-watched)');
-            const totalTasks = buttons.length;
-            let completedTasks = 0;
+    let learnedDurations = [];
 
-            const progressBar = document.createElement('div');
-            progressBar.style.position = 'fixed';
-            progressBar.style.top = '0';
-            progressBar.style.left = '0';
-            progressBar.style.width = '0%';
-            progressBar.style.height = progressBarHeight;
-            progressBar.style.backgroundColor = progressBarColor;
-            document.body.appendChild(progressBar);
+    function getAvgWatchTime() {
+        if (!learnedDurations.length) return 7;
+        return Math.ceil(learnedDurations.reduce((a, b) => a + b, 0) / learnedDurations.length);
+    }
 
-            for (const button of buttons) {
-                const previousAdvertsSection = button.closest('h4:contains("Previously Watched Adverts")');
-                if (previousAdvertsSection) {
-                    continue;
-                }
+    async function completePTC() {
+        const buttons = [...document.querySelectorAll('button')]
+            .filter(b => b.querySelector('i.fa-eye') && !b.closest('h4'));
 
-                button.scrollIntoView();
-                simulateClick(button);
+        const total = buttons.length;
+        if (!total) return toast('No PTC tasks found.');
 
-                const stopwatch = button.nextElementSibling.innerText;
-                const duration = parseInt(stopwatch.match(/\d+/)[0]) * 1000;
-                await sleep(duration);
+        let completed = 0;
 
-                const waitFocus = document.querySelector('span.link-color');
-                if (waitFocus && waitFocus.innerText === 'Wait Focus..') {
-                    waitFocus.scrollIntoView();
-                    simulateClick(waitFocus);
-                    await sleep(duration);
-                } else {
-                    const fallbackButton = document.createElement('button');
-                    fallbackButton.innerHTML = '<script type="text/javascript"> function submitForm() { document.getElementById("userForm").submit(); } <\/script>';
-                    document.body.appendChild(fallbackButton);
-                    simulateClick(fallbackButton);
-                }
+        const bar = document.createElement('div');
+        Object.assign(bar.style, {
+            position: 'fixed', top: '0', left: '0',
+            height: '4px', width: '0%',
+            backgroundColor: '#0ff', zIndex: '9999',
+            transition: 'width 0.4s ease'
+        });
+        document.body.appendChild(bar);
 
-                window.history.back();
-                completedTasks++;
+        for (const btn of buttons) {
+            btn.scrollIntoView({ behavior: 'smooth' });
+            await jitterSleep(1200);
+            simulateClick(btn);
+            await jitterSleep(1000);
 
-                const progressPercentage = (completedTasks / totalTasks) * 100;
-                progressBar.style.width = `${progressPercentage}%`;
-
-                await sleep(1000);
+            const timerText = document.querySelector('.timer')?.innerText || '';
+            const sec = parseInt(timerText.match(/\d+/)?.[0] || getAvgWatchTime());
+            if (sec > 45) {
+                toast('Task skipped due to suspicious duration.');
+                continue;
             }
 
-            const completionMessage = `All ${totalTasks} PTC wall tasks completed. Script ended.`;
-            showToast(completionMessage);
-            console.log(completionMessage);
-        } catch (error) {
-            console.error('An error occurred:', error);
+            learnedDurations.push(sec);
+            await jitterSleep(sec * 1000);
+
+            const focus = document.querySelector('span.link-color');
+            if (focus?.innerText.includes('Wait Focus')) {
+                simulateClick(focus);
+                await jitterSleep(sec * 1000);
+            }
+
+            const form = document.getElementById('userForm');
+            if (form) form.submit();
+
+            completed++;
+            bar.style.width = `${(completed / total) * 100}%`;
+            toast(`Task ${completed} of ${total} completed.`);
+            await jitterSleep(800);
+
+            location.href = '/ptc/wall.php';
+            return;
         }
+
+        toast('All tasks completed.');
     }
 
-    completePTCWallTasks();
-
-    const manualButton = document.createElement('button');
-    manualButton.innerHTML = 'Start Auto Complete';
-    manualButton.onclick = completePTCWallTasks;
-    document.body.appendChild(manualButton);
+    // Auto-start on page load
+    window.addEventListener('load', () => {
+        setTimeout(completePTC, 1500);
+    });
 
 })();
